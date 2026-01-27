@@ -15,7 +15,6 @@ const TrainingListPage = () => {
     if (stored) {
       setTrainings(JSON.parse(stored));
     } else {
-      // ⭐ 初回だけ初期データを保存
       localStorage.setItem(
         "trainings",
         JSON.stringify(initialTrainings)
@@ -37,25 +36,27 @@ const TrainingListPage = () => {
   const parts = Array.from(new Set(trainings.map(t => t.part)));
 
   return (
-    <div style={container}>
-      <h2>トレーニング一覧</h2>
+    <div>
+      <h2 style={{ marginBottom: "var(--spacing-md)" }}>トレーニング一覧</h2>
 
-      <ul style={partList}>
-        {parts.map(part => (
-          <li key={part}>
+      <div style={listContainer}>
+        {parts.map((part) => (
+          <div key={part} style={card}>
             <div
-              style={partRow}
+              style={partHeader}
               onClick={() => setOpenPart(openPart === part ? null : part)}
             >
-              <span>{part}</span>
-              <span>{openPart === part ? "▲" : "▼"}</span>
+              <span style={partTitle}>{part}</span>
+              <span style={{ transform: openPart === part ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                ▼
+              </span>
             </div>
 
             {openPart === part && (
               <ul style={trainingList}>
                 {trainings
-                  .filter(t => t.part === part)
-                  .map(t => (
+                  .filter((t) => t.part === part)
+                  .map((t) => (
                     <li key={t.slug} style={trainingRow}>
                       <Link to={`/trainings/${t.slug}`} style={trainingLink}>
                         {t.name}
@@ -65,25 +66,26 @@ const TrainingListPage = () => {
                         style={deleteButton}
                         onClick={() => deleteTraining(t.slug)}
                       >
-                        削除
+                        🗑️
                       </button>
                     </li>
                   ))}
               </ul>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
       <div style={addButtonWrapper}>
         <button
-          style={addButton}
+          className="btn-primary" // use global class
           onClick={() => navigate("/trainings/add")}
+          style={{ maxWidth: "200px" }}
         >
           ＋ 種目を追加
         </button>
       </div>
-    </div>
+    </div >
   );
 };
 
@@ -91,57 +93,68 @@ export default TrainingListPage;
 
 /* ===== styles ===== */
 
-const container: React.CSSProperties = {
-  padding: "16px 12px 80px",
+const listContainer: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--spacing-sm)",
 };
 
-const partList: React.CSSProperties = {
-  listStyle: "none",
-  padding: 0,
+const card: React.CSSProperties = {
+  background: "var(--bg-card)",
+  borderRadius: "var(--radius-md)",
+  boxShadow: "var(--shadow-sm)",
+  overflow: "hidden",
 };
 
-const partRow: React.CSSProperties = {
+const partHeader: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
-  padding: "12px 8px",
-  borderBottom: "1px solid #eee",
+  alignItems: "center",
+  padding: "var(--spacing-md)",
   cursor: "pointer",
+  background: "var(--bg-card)",
+  transition: "background 0.2s",
+};
+
+const partTitle: React.CSSProperties = {
+  fontWeight: "bold",
+  fontSize: "1.1rem",
 };
 
 const trainingList: React.CSSProperties = {
   listStyle: "none",
-  paddingLeft: "12px",
+  padding: 0,
+  margin: 0,
+  borderTop: "1px solid var(--border-color)",
 };
 
 const trainingRow: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  padding: "10px 8px",
+  padding: "12px var(--spacing-md)",
+  borderBottom: "1px solid var(--border-color)",
 };
 
 const trainingLink: React.CSSProperties = {
   textDecoration: "none",
-  color: "#000",
+  color: "var(--text-main)",
+  fontSize: "1rem",
+  flex: 1,
 };
 
 const deleteButton: React.CSSProperties = {
   background: "none",
   border: "none",
-  fontSize: "1.1rem",
+  fontSize: "1.2rem",
   cursor: "pointer",
+  padding: "4px 8px",
+  opacity: 0.6,
+  transition: "opacity 0.2s",
 };
 
 const addButtonWrapper: React.CSSProperties = {
   display: "flex",
   justifyContent: "center",
-  marginTop: "24px",
-};
-
-const addButton: React.CSSProperties = {
-  padding: "12px 24px",
-  borderRadius: "24px",
-  border: "none",
-  background: "#4dabf7",
-  color: "#fff",
+  marginTop: "var(--spacing-lg)",
 };

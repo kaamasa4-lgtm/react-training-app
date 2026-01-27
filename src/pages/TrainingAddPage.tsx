@@ -20,7 +20,15 @@ const TrainingAddPage = () => {
       localStorage.getItem("trainings") || "[]"
     );
 
-    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    let slug = name.toLowerCase().replace(/\s+/g, "-");
+
+    // 重複チェックとサフィックス付与
+    let counter = 1;
+    const originalSlug = slug;
+    while (stored.some(t => t.slug === slug)) {
+      slug = `${originalSlug}-${counter}`;
+      counter++;
+    }
 
     const newTraining: Training = {
       slug,
@@ -43,6 +51,7 @@ const TrainingAddPage = () => {
       <div style={form}>
         <label style={label}>部位</label>
         <select
+          name="training-part"
           value={part}
           onChange={(e) => setPart(e.target.value)}
           style={input}
@@ -57,26 +66,34 @@ const TrainingAddPage = () => {
 
         <label style={label}>種目名</label>
         <input
+          name="training-name"
           placeholder="例：ベンチプレス"
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={input}
+          autoComplete="off"
         />
 
         <label style={label}>説明</label>
         <textarea
+          name="training-desc"
           placeholder="フォームやポイント"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           style={textarea}
+          autoComplete="off"
         />
 
         <label style={label}>YouTube（任意）</label>
         <input
+          name="training-youtube-url"
+          type="url"
           placeholder="https://www.youtube.com/watch?v=..."
           value={youtube}
           onChange={(e) => setYoutube(e.target.value)}
           style={input}
+          autoComplete="off"
+          list="autocompleteOff" // Hack to further discourage Chrome autofill
         />
 
         {/* ボタンは YouTube のすぐ下 */}

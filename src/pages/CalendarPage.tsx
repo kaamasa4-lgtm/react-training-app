@@ -1,17 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getTrainedDates } from "../utils/storage";
 
 const CalendarPage = () => {
   // ===== state =====
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [trainedDates, setTrainedDates] = useState<string[]>([]);
 
-  // 仮：筋トレした日
-  const [trainedDates] = useState<string[]>([
-    "2025-12-01",
-    "2025-12-05",
-    "2025-12-10",
-  ]);
+  useEffect(() => {
+    setTrainedDates(getTrainedDates());
+  }, []);
 
   const navigate = useNavigate();
 
@@ -34,7 +33,7 @@ const CalendarPage = () => {
 
   // ===== JSX =====
   return (
-    <div style={container}>
+    <div>
       {/* ヘッダー */}
       <div style={header}>
         <button
@@ -45,7 +44,7 @@ const CalendarPage = () => {
         </button>
 
         <div style={selectBox}>
-          <select value={year} onChange={(e) => changeYear(Number(e.target.value))}>
+          <select value={year} onChange={(e) => changeYear(Number(e.target.value))} style={selectStyle}>
             {Array.from({ length: 30 }).map((_, i) => {
               const y = 2010 + i;
               return (
@@ -56,7 +55,7 @@ const CalendarPage = () => {
             })}
           </select>
 
-          <select value={month} onChange={(e) => changeMonth(Number(e.target.value))}>
+          <select value={month} onChange={(e) => changeMonth(Number(e.target.value))} style={selectStyle}>
             {Array.from({ length: 12 }).map((_, i) => (
               <option key={i} value={i}>
                 {i + 1}月
@@ -104,15 +103,18 @@ const CalendarPage = () => {
               key={day}
               onClick={() => {
                 setSelectedDate(dateStr);
-                navigate("/detail", { state: { date: dateStr } });
+                // 記録がある日なら履歴詳細へ
+                if (isTrained) {
+                  navigate(`/history/${dateStr}`);
+                }
               }}
               style={{
                 ...dayCell,
                 background: isSelected
                   ? "#51cf66"
                   : isToday
-                  ? "#4dabf7"
-                  : "#f1f3f5",
+                    ? "#4dabf7"
+                    : "#f1f3f5",
                 color: isSelected || isToday ? "#fff" : "#000",
                 position: "relative",
               }}
@@ -133,56 +135,85 @@ export default CalendarPage;
 
 /* ===== styles ===== */
 
-const container: React.CSSProperties = {
-  width: "100%",
-  padding: "16px 12px 80px",
-};
+/* ===== styles ===== */
 
 const header: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: "4px",
+  marginBottom: "var(--spacing-md)",
+  padding: "var(--spacing-sm)",
+  background: "var(--bg-card)",
+  borderRadius: "var(--radius-lg)",
+  boxShadow: "var(--shadow-sm)",
 };
 
 const selectBox: React.CSSProperties = {
   display: "flex",
-  gap: "6px",
+  gap: "8px",
+  alignItems: "center",
+};
+
+const selectStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  fontSize: "1.1rem",
+  fontWeight: "bold",
+  color: "var(--text-main)",
+  cursor: "pointer",
+  fontFamily: "inherit",
 };
 
 const navBtn: React.CSSProperties = {
   fontSize: "1.2rem",
-  padding: "6px 8px",
+  padding: "8px",
+  background: "transparent",
+  border: "none",
+  color: "var(--primary-color)",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 const grid: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-  gap: "6px",
-  marginTop: "12px",
+  gridTemplateColumns: "repeat(7, 1fr)",
+  gap: "8px",
+  marginTop: "var(--spacing-md)",
 };
 
 const week: React.CSSProperties = {
   textAlign: "center",
-  fontSize: "0.75rem",
+  fontSize: "0.8rem",
+  fontWeight: "bold",
+  marginBottom: "8px",
+  color: "var(--text-sub)",
 };
 
 const dayCell: React.CSSProperties = {
   width: "100%",
-  minHeight: "44px",
-  borderRadius: "10px",
-  border: "none",
-  fontSize: "0.9rem",
+  aspectRatio: "1/1",
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexDirection: "column",
+  fontSize: "1rem",
   padding: 0,
+  position: "relative",
+  transition: "all 0.2s",
+  cursor: "pointer",
+  border: "none", // ensure default border is gone
 };
 
 const dot: React.CSSProperties = {
   position: "absolute",
-  bottom: "6px",
+  bottom: "4px",
   left: "50%",
   transform: "translateX(-50%)",
-  width: "6px",
-  height: "6px",
+  width: "5px",
+  height: "5px",
   borderRadius: "50%",
-  background: "#ff6b6b",
+  background: "var(--accent-color)",
 };
