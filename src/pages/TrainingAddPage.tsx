@@ -22,7 +22,6 @@ const TrainingAddPage = () => {
 
     let slug = name.toLowerCase().replace(/\s+/g, "-");
 
-    // 重複チェックとサフィックス付与
     let counter = 1;
     const originalSlug = slug;
     while (stored.some(t => t.slug === slug)) {

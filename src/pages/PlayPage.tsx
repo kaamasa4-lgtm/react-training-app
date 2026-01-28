@@ -1,51 +1,29 @@
 // PlayPage.tsx
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { trainings } from "../data/trainings";       // 値としての配列
 import type { Training } from "../data/trainings";   // 型だけ
 import React from "react";
 
+export function useMediaQuery(query: string): boolean{
+  const [matches, setMatches]=useState(false);
+
+  useEffect(() =>{
+    const media=window.matchMedia(query);
+    if(media.matches !=matches){
+      setMatches(media.matches);
+    }
+    const listener =() =>setMatches(media.matches);
+    media.addEventListener("change", listener);
+    return() => media.removeEventListener("change",listener);    
+  },[matches, query]);
+  return matches;
+}
 
 import type { TrainingRecord } from "../types";
 import { saveHistory } from "../utils/storage";
 
-// 長押しフック
-const useLongPress = (callback: () => void, speed = 100, delay = 500) => {
-  // const [isPressing, setIsPressing] = useState(false); // 未使用のため削除
-  const timerRef = useRef<number | null>(null);
-  const actionRef = useRef(callback);
 
-  useEffect(() => {
-    actionRef.current = callback;
-  }, [callback]);
-
-  const start = useCallback(() => {
-    actionRef.current(); // 即時実行
-    // setIsPressing(true);
-    timerRef.current = window.setTimeout(() => {
-      timerRef.current = window.setInterval(() => {
-        actionRef.current();
-      }, speed);
-    }, delay);
-  }, [speed, delay]);
-
-  const stop = useCallback(() => {
-    // setIsPressing(false);
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  return {
-    onMouseDown: start,
-    onMouseUp: stop,
-    onMouseLeave: stop,
-    onTouchStart: start,
-    onTouchEnd: stop,
-  };
-};
 
 
 const NumberStepper = ({
@@ -65,42 +43,55 @@ const NumberStepper = ({
 }) => {
   const current = typeof value === "number" ? value : 0;
 
-  const update = useCallback((amount: number) => {
-    onChange(Number((current + amount).toFixed(2))); // 簡易計算
-  }, [current, onChange]);
+  const update = useCallback(
+    (amount: number) => {
+      const next = current + amount;
+      if (next < min) return;
+      onChange(next);
+    },
+    [current, min, onChange]
+  );
 
-  const minusProps = useLongPress(() => {
-    if (current - step >= min) update(-step);
-  });
-
-  const plusProps = useLongPress(() => {
-    update(step);
-  });
+  const minusProps = { onClick: () => update(-step) };
+  const plusProps = { onClick: () => update(step) };
 
   return (
     <div style={stepperContainer}>
       <label style={stepperLabel}>{label}</label>
-      <div style={stepperControls}>
-        <button style={stepBtn} {...minusProps}>
-          －
-        </button>
-        <div style={inputWrapper}>
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            style={stepperInput}
-            placeholder="0"
-          />
-          <span style={stepperSuffix}>{suffix}</span>
+
+      {/* 縦並び（重量と同じ） */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        
+        {/* 上：数値入力 */}
+        <div style={stepperControls}>
+          <div style={inputWrapper}>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={value}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^0-9]/g, "");
+                onChange(v === "" ? 0 : Number(v));
+              }}
+              style={stepperInput}
+              placeholder="0"
+            />
+            <span style={stepperSuffix}>{suffix}</span>
+          </div>
         </div>
-        <button style={stepBtn} {...plusProps}>
-          ＋
-        </button>
+
+        {/* 下：－＋ */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button style={subStepBtn} {...minusProps}>－</button>
+          <button style={subStepBtn} {...plusProps}>＋</button>
+        </div>
+
       </div>
     </div>
   );
 };
+
 
 const WeightStepper = ({
   value,
@@ -116,13 +107,9 @@ const WeightStepper = ({
   const update = useCallback((amount: number) => {
     const nextVal = current + amount;
     if (nextVal < 0) return;
-    onChange(parseFloat(nextVal.toFixed(2)));
+    onChange(parseFloat(nextVal.toFixed(3)));
   }, [current, onChange]);
-
-  const minus1 = useLongPress(() => update(-1));
-  const plus1 = useLongPress(() => update(1));
-  const minusDecimal = useLongPress(() => update(-0.25));
-  const plusDecimal = useLongPress(() => update(0.25));
+  const isMobile=useMediaQuery("(max-width: 600px)");
 
   return (
     <div style={stepperContainer}>
@@ -130,29 +117,35 @@ const WeightStepper = ({
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         {/* Integer Control */}
         <div style={stepperControls}>
-          <button style={stepBtn} {...minus1}>
-            －
-          </button>
+
           <div style={inputWrapper}>
             <input
-              type="number"
-              value={value}
-              onChange={(e) => onChange(Number(e.target.value))}
-              style={stepperInput}
-              placeholder="0"
+               type="number"
+               inputMode="decimal"
+               pattern="[0-9]*"
+               value={value}
+               onChange={(e) => onChange(Number(e.target.value))}
+               style={stepperInput}
+               placeholder="0"
+
             />
-            <span style={stepperSuffix}>kg</span>
+            <span style={stepperSuffix}>kg</span>      
           </div>
-          <button style={stepBtn} {...plus1}>
-            ＋
-          </button>
+
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", padding: "0 4px" }}>
-          <button style={subStepBtn} {...minusDecimal}>
+          <button
+            style={isMobile ? subStepBtnMobile :subStepBtn}
+            onClick={() => update(-0.25)}
+          >
             -0.25
           </button>
-          <button style={subStepBtn} {...plusDecimal}>
+
+          <button
+            style={isMobile ? subStepBtnMobile :subStepBtn}
+            onClick={() => update(0.25)}
+          >
             +0.25
           </button>
         </div>
@@ -203,21 +196,28 @@ const PlayPage = () => {
     setSelectedTraining(t);
   }, [trainingName, trainingList]);
 
-  const saveRecord = () => {
-    if (!part || !trainingName) return alert("部位と種目を選んでください");
-    const newRecord: TrainingRecord = {
-      id: Math.random().toString(36).slice(2) + Date.now().toString(36),
-      part,
-      name: trainingName,
-      weight: weight ? Number(weight) : undefined,
-      reps: reps ? Number(reps) : undefined,
-    };
-    const updated = [...records, newRecord];
-    setRecords(updated);
-    localStorage.setItem("records", JSON.stringify(updated));
-    setWeight("");
-    setReps("");
+const saveRecord = () => {
+  if (!part || !trainingName) return alert("部位と種目を選んでください");
+  if (weight === "" || reps === "") return alert("重量と回数を入力してください");
+
+  const newRecord: TrainingRecord = {
+    id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+    part,
+    name: trainingName,
+    weight: Number(weight),
+    reps: Number(reps),
   };
+
+  setRecords(prev => {
+    const updated = [...prev, newRecord];
+    localStorage.setItem("records", JSON.stringify(updated));
+    return updated;
+  });
+
+  setWeight("");
+  setReps("");
+};
+
 
   const addInterval = () => {
     if (!interval) return;
@@ -348,7 +348,7 @@ const PlayPage = () => {
       <div style={{ ...card, display: "flex", alignItems: "center", gap: "var(--spacing-md)" }}>
         <select value={interval} onChange={(e) => setInterval(Number(e.target.value))} style={selectInput}>
           <option value="">選択してください</option>
-          {[30, 60, 90, 120, 180, 300, 600].map(sec => (
+          {[30, 60, 90, 120, 150, 180, 300, 600].map(sec => (
             <option key={sec} value={sec}>{sec}秒</option>
           ))}
         </select>
@@ -362,7 +362,10 @@ const PlayPage = () => {
             if (records.length === 0) return alert("記録がありません");
             if (!window.confirm("トレーニングを終了して記録を保存しますか？")) return;
 
-            const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+            const today = new Date();
+            const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+
             saveHistory({ date, records });
 
             setRecords([]);
@@ -541,20 +544,7 @@ const stepperControls: React.CSSProperties = {
   gap: "8px",
 };
 
-const stepBtn: React.CSSProperties = {
-  width: "36px",
-  height: "36px",
-  borderRadius: "50%",
-  border: "1px solid var(--border-color)",
-  background: "var(--bg-main)",
-  fontSize: "1.2rem",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-  color: "var(--text-main)",
-  padding: 0,
-};
+
 
 const inputWrapper: React.CSSProperties = {
   position: "relative",
@@ -596,4 +586,11 @@ const subStepBtn: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   cursor: "pointer",
+};
+
+const subStepBtnMobile: React.CSSProperties ={
+  ...subStepBtn,
+  width: "30px",
+  height: "35px",
+  fontSize: "12px",
 };
