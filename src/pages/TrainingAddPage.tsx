@@ -61,6 +61,7 @@ const TrainingAddPage = () => {
           <option value="脚">脚</option>
           <option value="肩">肩</option>
           <option value="腕">腕</option>
+          <option value="腹">腹</option>
         </select>
 
         <label style={label}>種目名</label>

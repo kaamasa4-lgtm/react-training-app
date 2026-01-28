@@ -119,16 +119,25 @@ const WeightStepper = ({
         <div style={stepperControls}>
 
           <div style={inputWrapper}>
-            <input
-               type="number"
-               inputMode="decimal"
-               pattern="[0-9]*"
-               value={value}
-               onChange={(e) => onChange(Number(e.target.value))}
-               style={stepperInput}
-               placeholder="0"
+<input
+  type="text" // numberではなくtextにする
+  inputMode="decimal" // 数字用のキーボード（スマホ用）
+  pattern="[0-9]*"
+  value={value}
+  placeholder="0"
+  style={stepperInput}
+  onChange={(e) => {
+    // 数字と小数点だけ許可
+    const sanitized = e.target.value.replace(/[^0-9.]/g, "");
 
-            />
+    // 小数点が複数ある場合は先頭の1つだけ残す
+    const parts = sanitized.split(".");
+    const normalized = parts.length > 1 ? parts[0] + "." + parts.slice(1).join("") : parts[0];
+
+    onChange(normalized === "" ? 0 : parseFloat(normalized));
+  }}
+/>
+
             <span style={stepperSuffix}>kg</span>      
           </div>
 
@@ -288,29 +297,37 @@ const saveRecord = () => {
 
       <h3 style={heading}>トレーニング入力</h3>
       <div style={card}>
-        <div style={formRow}>
-          <select
-            value={part}
-            onChange={(e) => { setPart(e.target.value); setTrainingName(""); }}
-            style={selectInput}
-          >
-            <option value="">部位を選択</option>
-            {parts.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+ <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-sm)", marginBottom: "var(--spacing-md)" }}>
+  {/* 部位選択 */}
+  <select
+    value={part}
+    onChange={(e) => {
+      setPart(e.target.value);
+      setTrainingName(""); // 部位変えたら種目リセット
+    }}
+    style={selectInput}
+  >
+    <option value="">部位を選択</option>
+    {parts.map(p => <option key={p} value={p}>{p}</option>)}
+  </select>
 
-          {part && (
-            <select
-              value={trainingName}
-              onChange={(e) => setTrainingName(e.target.value)}
-              style={selectInput}
-            >
-              <option value="">種目を選択</option>
-              {trainingList.filter(t => t.part === part).map(t => (
-                <option key={t.slug} value={t.name}>{t.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
+  {/* 種目選択は常に表示。部位未選択時は disabled */}
+  <select
+    value={trainingName}
+    onChange={(e) => setTrainingName(e.target.value)}
+    style={selectInput}
+    disabled={!part} // 部位が未選択なら選択不可
+  >
+    <option value="">種目を選択</option>
+    {part &&
+      trainingList
+        .filter(t => t.part === part)
+        .map(t => <option key={t.slug} value={t.name}>{t.name}</option>)
+    }
+  </select>
+</div>
+
+
 
         <div style={{ display: "flex", gap: "var(--spacing-md)", justifyContent: "center", margin: "var(--spacing-md) 0" }}>
           <WeightStepper
@@ -442,12 +459,6 @@ const card: React.CSSProperties = {
   padding: "var(--spacing-md)",
   borderRadius: "var(--radius-md)",
   boxShadow: "var(--shadow-sm)",
-  marginBottom: "var(--spacing-md)",
-};
-
-const formRow: React.CSSProperties = {
-  display: "flex",
-  gap: "var(--spacing-sm)",
   marginBottom: "var(--spacing-md)",
 };
 
