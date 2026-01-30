@@ -44,13 +44,6 @@ const TrainingDetailPage = () => {
 
       <p>{training.description}</p>
 
-      {/* Debug Info (Troubleshooting) */}
-      <div style={{ fontSize: "0.8rem", color: "#999", margin: "10px 0", background: "#f1f1f1", padding: "8px" }}>
-        <strong>Debug:</strong><br />
-        Raw URL: {training.youtube || "(none)"}<br />
-        ID: {videoId || "(none)"}<br />
-        Slug: {training.slug}
-      </div>
 
       {/* YouTube（小さめ表示） */}
       {videoId && (
